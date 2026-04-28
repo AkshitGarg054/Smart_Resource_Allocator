@@ -193,14 +193,17 @@ export default function App() {
                 onSelect={setSelectedId}
               />
             ) : (
-              <PendingApprovals onCountChange={(backendCount) => {
-                let audioCount = 0;
-                try {
-                  const items = JSON.parse(localStorage.getItem('pending_audio_reports') || '[]');
-                  audioCount = Array.isArray(items) ? items.length : 0;
-                } catch { /* ignore */ }
-                setPendingCount(backendCount + audioCount);
-              }} />
+              <PendingApprovals
+                onApproved={refresh}
+                onCountChange={(backendCount) => {
+                  let audioCount = 0;
+                  try {
+                    const items = JSON.parse(localStorage.getItem('pending_audio_reports') || '[]');
+                    audioCount = Array.isArray(items) ? items.length : 0;
+                  } catch { /* ignore */ }
+                  setPendingCount(backendCount + audioCount);
+                }}
+              />
             )}
           </Panel>
         </PanelGroup>

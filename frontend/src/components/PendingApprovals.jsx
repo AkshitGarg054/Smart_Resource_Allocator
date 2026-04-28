@@ -8,7 +8,7 @@ const POLL_MS = 20_000;
 
 // ── Backend report card ──────────────────────────────────────────────────────
 
-function PendingCard({ report, onRemove }) {
+function PendingCard({ report, onRemove, onApproved }) {
   const [state, setState] = useState('idle');
   const [errMsg, setErrMsg] = useState('');
 
@@ -18,13 +18,16 @@ function PendingCard({ report, onRemove }) {
     try {
       await approveReport(report._id);
       setState('approved');
+      // Notify the dashboard immediately so the new incident appears in the
+      // Live Feed without waiting for the next poll cycle.
+      onApproved?.();
       setTimeout(() => onRemove(report._id), 900);
     } catch (err) {
       setErrMsg(err.message || 'Approval failed');
       setState('error');
       setTimeout(() => setState('idle'), 3500);
     }
-  }, [report._id, onRemove]);
+  }, [report._id, onRemove, onApproved]);
 
   const handleReject = useCallback(async () => {
     setState('rejecting');
@@ -185,7 +188,7 @@ function AudioReportCard({ report, onRemove }) {
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export default function PendingApprovals({ onCountChange }) {
+export default function PendingApprovals({ onCountChange, onApproved }) {
   const [reports, setReports] = useState([]);
   const [loadState, setLoadState] = useState('loading');
   const [lastRefresh, setLastRefresh] = useState(null);
@@ -296,7 +299,7 @@ export default function PendingApprovals({ onCountChange }) {
         ) : (
           <>
             {reports.map((r) => (
-              <PendingCard key={r._id} report={r} onRemove={handleRemove} />
+              <PendingCard key={r._id} report={r} onRemove={handleRemove} onApproved={onApproved} />
             ))}
 
             {/* Audio reports section */}
