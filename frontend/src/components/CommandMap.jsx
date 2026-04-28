@@ -291,13 +291,27 @@ function FitToMarkers({ points }) {
   return null;
 }
 
-function MapSizer({ isMaximized }) {
+function MapResizer() {
   const map = useMap();
   useEffect(() => {
-    // After the CSS transition ends, tell Leaflet the container resized
-    const timer = setTimeout(() => map.invalidateSize(), 320);
-    return () => clearTimeout(timer);
-  }, [isMaximized, map]);
+    const container = map.getContainer();
+    let rafId = null;
+
+    const observer = new ResizeObserver(() => {
+      // Coalesce rapid resize events (panel drag fires many per second)
+      // into a single rAF so invalidateSize runs once per paint cycle.
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        map.invalidateSize();
+      });
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [map]);
   return null;
 }
 
@@ -394,7 +408,7 @@ export default function CommandMap({ incidents, selectedId, onSelect, onAssigned
 
           {points.length > 0 && <FitToMarkers points={points} />}
           <FlyToSelected selectedId={selectedId} markerRefs={markerRefs} visible={visible} />
-          <MapSizer isMaximized={isMaximized} />
+          <MapResizer />
 
           {visible.map(({ inc, ll }) => {
             const band = scoreBand(inc.impact_score);
